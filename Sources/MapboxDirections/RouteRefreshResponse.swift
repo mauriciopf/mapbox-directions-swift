@@ -11,7 +11,7 @@ public struct RouteRefreshResponse {
     
     public let credentials: DirectionsCredentials
     
-    private var legAnnotation: RouteLegAnnotation? // should it be optional?
+    private var legAnnotations: [RouteLegAnnotation]
     
     /**
      The time when this `RouteRefreshResponse` object was created, which is immediately upon recieving the raw URL response.
@@ -30,11 +30,14 @@ extension RouteRefreshResponse: Codable {
     }
     
     mutating func updateRoute(_ route: Route) {
-        guard let legAnnotation = self.legAnnotation else {
-            return
+
+        var updatedLegs = route.legs  // make copy
+        // check equal counts?
+        updatedLegs = zip(legAnnotations, updatedLegs).map { (pair) -> RouteLeg in
+            let (annotation, leg) = pair
+            leg.updateAnnotationData(from: annotation) // update only legs after 'currentLegIndex'?
+            return leg
         }
-        let updatedLegs = route.legs
-        updatedLegs[legIndex].updateAnnotationData(from: legAnnotation)
         
         self.route = Route(legs: updatedLegs,
                            shape: route.shape,
@@ -61,14 +64,14 @@ extension RouteRefreshResponse: Codable {
         self.identifier = try container.decodeIfPresent(String.self, forKey: .identifier)
         
         let refreshedRoute = try container.decode(RefreshedRoute.self, forKey: .route)
-        self.legAnnotation = refreshedRoute.legAnnotations?[legIndex]   // to test with multi-leg route
+        self.legAnnotations = refreshedRoute.legAnnotations
     }
     
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encodeIfPresent(identifier, forKey: .identifier)
         
-        let route = RefreshedRoute(legAnnotations: (legAnnotation != nil) ? [legAnnotation!] : [])
+        let route = RefreshedRoute(legAnnotations: legAnnotations)
         try container.encode(route, forKey: .route)
     }
 

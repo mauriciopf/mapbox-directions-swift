@@ -2,7 +2,7 @@
 import Foundation
 
 struct RefreshedRoute {
-    var legAnnotations: [RouteLegAnnotation]?
+    var legAnnotations: [RouteLegAnnotation]
 }
 
 extension RefreshedRoute: Codable {
